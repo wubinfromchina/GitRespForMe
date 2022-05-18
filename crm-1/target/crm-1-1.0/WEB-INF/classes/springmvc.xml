@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!--截获所有url请求-->
+    <mvc:default-servlet-handler></mvc:default-servlet-handler>
+
+    <!--包扫描-->
+    <context:component-scan base-package="com.wb.controller"></context:component-scan>
+
+    <!--注解驱动-->
+    <mvc:annotation-driven></mvc:annotation-driven>
+
+    <!--视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!--前缀-->
+        <property name="prefix" value="/WEB-INF/pages/"></property>
+        <!--后缀-->
+        <property name="suffix" value=".jsp"></property>
+    </bean>
+
+    <!--配置拦截器-->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <!--拦截的请求-->
+            <mvc:mapping path="/setting/**"/>
+            <mvc:mapping path="/workbench/**"/>
+            <!--不拦截的请求-->
+            <mvc:exclude-mapping path="/settings/qx/user/toLogin.do"/>
+            <!--拦截器类-->
+            <bean class="com.wb.controller.web.interceptor.LoginInterceptor"></bean>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <!--配置文件上传解析器，id必须为multipartResolver-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!--设置文件大小上传限制-->
+        <property name="maxUploadSize" value="#{1024*1024*1024}"></property>
+        <!--设置文件的编码格式-->
+        <property name="defaultEncoding" value="utf-8"></property>
+    </bean>
+</beans>
