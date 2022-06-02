@@ -32,7 +32,7 @@
   <welcome-file-list>
     <welcome-file>WEB-INF/pages/index.html</welcome-file>
   </welcome-file-list>
-  <!--注册SpringMVC框架-->
+  <!--注册SpringMVC框架:中央调度器-->
   <servlet>
     <servlet-name>springmvc</servlet-name>
     <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
