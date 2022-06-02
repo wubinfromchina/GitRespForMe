@@ -2,6 +2,7 @@ package com.wb.reggie.common;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,7 +15,7 @@ import java.util.Map;
  * @CreateTime: 2022/5/25 22:17
  */
 @Data
-public class RetObj<T> {
+public class RetObj<T> implements Serializable {//序列化接口
 
     private Integer code; //编码：1成功，0和其它数字为失败
 

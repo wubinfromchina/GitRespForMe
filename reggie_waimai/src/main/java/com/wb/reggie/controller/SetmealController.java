@@ -14,6 +14,8 @@ import com.wb.reggie.service.SetmealService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,11 +84,12 @@ public class SetmealController {
     }
 
     /**
-     * 保存套餐
+     * 新增套餐
      * @param setmealDto
      * @return
      */
     @PostMapping
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public RetObj<String> save(@RequestBody SetmealDto setmealDto){
         log.info("准备保存套餐");
 
@@ -101,6 +104,7 @@ public class SetmealController {
      * @return
      */
     @DeleteMapping()
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public RetObj<String> delete(String ids){
         log.info("准备删除");
         //切割字符串获取id数组
@@ -136,7 +140,13 @@ public class SetmealController {
         return RetObj.success(setmealDto);
     }
 
+    /**
+     * 保存修改
+     * @param setmealDto
+     * @return
+     */
     @PutMapping
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public RetObj<String> edit(@RequestBody SetmealDto setmealDto){
         log.info("准备保存修改");
         setmealService.editWithDish(setmealDto);
@@ -151,6 +161,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping("/status/1")
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public RetObj<String> startSale(String ids){
         log.info("准备起售");
         String[] setmealIds = ids.split(",");
@@ -166,6 +177,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping("/status/0")
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public RetObj<String> endSale(String ids){
         log.info("准备停售");
         String[] setmealIds = ids.split(",");
@@ -181,6 +193,7 @@ public class SetmealController {
      * @return
      */
     @GetMapping("/list")
+    @Cacheable(value = "setmealCache",key = "#setmeal.categoryId + '_' + #setmeal.status")
     public RetObj<List<SetmealDto>> list(Setmeal setmeal){
         //查询套餐分类下对应的套餐
         LambdaQueryWrapper<Setmeal> wrapper = new LambdaQueryWrapper<>();
