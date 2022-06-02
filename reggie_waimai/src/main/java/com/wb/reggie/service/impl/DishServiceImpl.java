@@ -9,6 +9,7 @@ import com.wb.reggie.pojo.DishFlavor;
 import com.wb.reggie.service.DishFlavorService;
 import com.wb.reggie.service.DishService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,8 @@ import java.util.List;
 public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements DishService {
     @Autowired
     private DishFlavorService dishFlavorService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 保存菜品和口味至对应表中
@@ -80,6 +83,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     @Transactional
     public void deleteWithFlavor(String[] dishIds) {
         for (String dishId : dishIds) {//遍历取得每个被选中的菜品id
+            Dish dish = super.getById(dishId);
             //删除关联的菜品口味
             LambdaQueryWrapper<DishFlavor> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(DishFlavor::getDishId,dishId);
@@ -98,6 +102,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     public void startSaleByIds(String[] dishIds) {
         for (String dishId : dishIds) {//循环遍历取得id
             Dish dish = super.getById(dishId);
+            //修改状态
             dish.setStatus(1);
             super.updateById(dish);
         }
@@ -112,6 +117,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements Di
     public void endSaleByIds(String[] dishIds) {
         for (String dishId : dishIds) {//循环遍历取得id
             Dish dish = super.getById(dishId);
+            //修改状态
             dish.setStatus(0);
             super.updateById(dish);
         }

@@ -1,6 +1,11 @@
 server:
   port: 8080
 spring:
+  redis:
+    host: 192.168.234.128
+    port: 6379
+    password:
+    database: 0
   application:
     #可自定义应用程序的名字
     name: reggie_waimai
