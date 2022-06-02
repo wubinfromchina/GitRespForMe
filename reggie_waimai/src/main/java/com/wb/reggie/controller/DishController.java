@@ -218,6 +218,7 @@ public class DishController {
         //查询redis中是否有对应数据，有则直接返回
         List<DishDto> dishDtoList = (List<DishDto>)redisTemplate.opsForValue().get(key);
         if (dishDtoList != null){
+            log.info("从redis中获取到了数据");
             return RetObj.success(dishDtoList);
         }
         //条件构造器
@@ -244,6 +245,7 @@ public class DishController {
         }).collect(Collectors.toList());
 
         //查询出来的数据保存到redis中一份
+        log.info("将数据保存至redis中");
         redisTemplate.opsForValue().set(key,dishDtoList,60, TimeUnit.MINUTES);
 
         return RetObj.success(dishDtoList);
