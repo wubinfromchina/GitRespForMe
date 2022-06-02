@@ -9,6 +9,7 @@ import com.wb.reggie.utils.SMSUtils;
 import com.wb.reggie.utils.ValidateCodeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Description: 用户管理控制层
@@ -29,6 +31,9 @@ import java.util.Map;
 @Slf4j
 @RequestMapping("/user")
 public class UserController {
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Autowired
     private UserService userService;
@@ -50,7 +55,10 @@ public class UserController {
             //SMSUtils.sendMessage("ruiji",code,phone,"");
             log.info("code={}",code);
             //保存验证码至session
-            session.setAttribute(phone,code);
+            //session.setAttribute(phone,code);
+            //保存验证码至redis,有效期5分钟
+            redisTemplate.opsForValue().set(phone,code,5, TimeUnit.MINUTES);
+
             return RetObj.success("短信发送成功");
         }else {
             return RetObj.error("发送失败,手机号有错误");
@@ -70,9 +78,11 @@ public class UserController {
         String phone = (String)map.get("phone");
         String code = (String)map.get("code");
         //获取session中的code值
-        String codeOfSession = (String)session.getAttribute(phone);
+        //String codeOfSession = (String)session.getAttribute(phone);
+        //获取redis中的code值
+        String redisCode = (String)redisTemplate.opsForValue().get(phone);
         //校验
-        if (codeOfSession!=null && code.equals(codeOfSession)){
+        if (redisCode!=null && code.equals(redisCode)){
             //比对成功
             //判断是否为新用户，是则新建用户
             LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -86,6 +96,9 @@ public class UserController {
                 userService.save(user);
             }
             session.setAttribute("user",user.getId());
+            //登录成功，删除redis中验证码
+            redisTemplate.delete(phone);
+
             return RetObj.success(user);
         }
 

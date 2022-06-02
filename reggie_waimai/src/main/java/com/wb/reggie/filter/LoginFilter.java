@@ -41,7 +41,11 @@ public class LoginFilter implements Filter {
                 "/backend/**",
                 "/front/**",
                 "/user/sendMsg",
-                "/user/login"
+                "/user/login",
+                "/doc.html",
+                "/webjars/*",
+                "/swagger-resources",
+                "/v2/api-docs"
         };
         //属于放行路径则直接放行，否则进一步判断
        boolean flag = checkURI(urls,requestURI);

@@ -13,9 +13,12 @@ import com.wb.reggie.service.DishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +39,8 @@ public class DishController {
     private CategoryService categoryService;
     @Autowired
     private DishFlavorService dishFlavorService;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 分页查询
@@ -86,7 +91,11 @@ public class DishController {
     @PostMapping
     public RetObj<String> save(@RequestBody DishDto dishDto){
         log.info("准备保存中");
-
+        //keys
+        Set keys = redisTemplate.keys("dish_*");
+        //清理redis缓存
+        redisTemplate.delete(keys);
+        //保存
         dishService.saveWithFlavor(dishDto);
 
         return RetObj.success("添加成功");
@@ -115,6 +124,11 @@ public class DishController {
         dishDto.setFlavors(list);
         dishDto.setCategoryName(category.getName());
 
+        //keys
+        Set keys = redisTemplate.keys("dish_*");
+        //清理redis缓存
+        redisTemplate.delete(keys);
+
         return RetObj.success(dishDto);
     }
 
@@ -126,7 +140,9 @@ public class DishController {
     @PutMapping
     public RetObj<String> edit(@RequestBody DishDto dishDto){
         log.info("准备保存数据");
+        //保存修改
         dishService.editWithFlavor(dishDto);
+
 
         return RetObj.success("修改成功");
     }
@@ -139,9 +155,16 @@ public class DishController {
     @DeleteMapping()
     public RetObj<String> delete(String ids){
         log.info("准备删除");
+
         //切割字符串获取id数组
         String[] dishIds = ids.split(",");
+
+        //完成删除操作
         dishService.deleteWithFlavor(dishIds);
+        //keys
+        Set keys = redisTemplate.keys("dish_*");
+        //清理redis缓存
+        redisTemplate.delete(keys);
 
         return RetObj.success("删除成功");
     }
@@ -156,6 +179,11 @@ public class DishController {
         log.info("准备起售");
         String[] dishIds = ids.split(",");
         dishService.startSaleByIds(dishIds);
+        //keys
+        Set keys = redisTemplate.keys("dish_*");
+        //清理redis缓存
+        redisTemplate.delete(keys);
+
         return RetObj.success("修改状态成功");
     }
 
@@ -169,6 +197,11 @@ public class DishController {
         log.info("准备停售");
         String[] dishIds = ids.split(",");
         dishService.endSaleByIds(dishIds);
+        //keys
+        Set keys = redisTemplate.keys("dish_*");
+        //清理redis缓存
+        redisTemplate.delete(keys);
+
         return RetObj.success("修改状态成功");
     }
 
@@ -180,14 +213,24 @@ public class DishController {
     @GetMapping("/list")
     public RetObj<List<DishDto>> list(Dish dish){
         log.info("准备返回菜品集合");
+        //设置一个key
+        String key = "dish_" + dish.getCategoryId();
+        //查询redis中是否有对应数据，有则直接返回
+        List<DishDto> dishDtoList = (List<DishDto>)redisTemplate.opsForValue().get(key);
+        if (dishDtoList != null){
+            log.info("从redis中获取到了数据");
+            return RetObj.success(dishDtoList);
+        }
+        //条件构造器
         LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(dish.getCategoryId()!=null,Dish::getCategoryId,dish.getCategoryId());
         wrapper.eq(Dish::getStatus,1);//起售状态
         wrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
 
+        //redis中无数据则在mysql中查询对应菜品数据
         List<Dish> list = dishService.list(wrapper);
 
-        List<DishDto> dishDtoList = list.stream().map((item) -> {
+        dishDtoList = list.stream().map((item) -> {
             //拷贝
             DishDto dishDto = new DishDto();
             BeanUtils.copyProperties(item,dishDto);
@@ -200,6 +243,10 @@ public class DishController {
             dishDto.setCategoryName(category.getName());
             return dishDto;
         }).collect(Collectors.toList());
+
+        //查询出来的数据保存到redis中一份
+        log.info("将数据保存至redis中");
+        redisTemplate.opsForValue().set(key,dishDtoList,60, TimeUnit.MINUTES);
 
         return RetObj.success(dishDtoList);
     }
